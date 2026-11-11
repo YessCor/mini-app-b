@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from starlette.requests import Request
@@ -27,8 +27,8 @@ def pagina_principal(request: Request):
 
 
 @app.get("/api/preguntas")
-def listar_preguntas():
-    return obtener_preguntas()
+def listar_preguntas(cantidad: Annotated[int, Query(ge=1, le=5)] = 5):
+    return obtener_preguntas(cantidad)
 
 
 @app.post("/api/responder")

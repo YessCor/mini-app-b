@@ -40,6 +40,23 @@
         font-weight: 600;
       }
 
+      #configuracion {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 1.5rem 0;
+      }
+
+      select {
+        min-height: 3rem;
+        padding: 0.5rem;
+        border: 1px solid #cbd3e2;
+        border-radius: 0.65rem;
+        background: #fff;
+        color: inherit;
+        font: inherit;
+      }
+
       #opciones {
         display: grid;
         gap: 0.75rem;
@@ -74,15 +91,21 @@
       }
 
       #siguiente,
-      #reiniciar {
+      #reiniciar,
+      #iniciar {
         border: 0;
         background: #304fc4;
         color: #fff;
         text-align: center;
       }
 
+      #iniciar[hidden],
       #siguiente[hidden],
       #reiniciar[hidden] {
+        display: none;
+      }
+
+      #juego[hidden] {
         display: none;
       }
 
@@ -101,15 +124,31 @@
   <body>
     <main>
       <h1>Trivia de cultura general</h1>
-      <p id="progreso" aria-live="polite">Cargando preguntas…</p>
-      <p id="puntaje">Puntaje: 0</p>
-      <h2 id="pregunta"></h2>
-      <div id="opciones" aria-label="Opciones de respuesta"></div>
-      <p id="resultado" role="status" aria-live="polite"></p>
-      <button id="siguiente" type="button" hidden>Siguiente pregunta</button>
-      <button id="reiniciar" type="button" hidden>Jugar de nuevo</button>
+      <div id="configuracion">
+        <label for="cantidad">Cantidad de preguntas:</label>
+        <select id="cantidad">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5" selected>5</option>
+        </select>
+        <button id="iniciar" type="button">Comenzar trivia</button>
+      </div>
+      <section id="juego" hidden>
+        <p id="progreso" aria-live="polite">Preparando trivia…</p>
+        <p id="puntaje">Puntaje: 0</p>
+        <h2 id="pregunta"></h2>
+        <div id="opciones" aria-label="Opciones de respuesta"></div>
+        <p id="resultado" role="status" aria-live="polite"></p>
+        <button id="siguiente" type="button" hidden>Siguiente pregunta</button>
+        <button id="reiniciar" type="button" hidden>Jugar de nuevo</button>
+      </section>
     </main>
     <script>
+      const selectorCantidad = document.querySelector("#cantidad");
+      const botonIniciar = document.querySelector("#iniciar");
+      const juego = document.querySelector("#juego");
       const progreso = document.querySelector("#progreso");
       const puntaje = document.querySelector("#puntaje");
       const textoPregunta = document.querySelector("#pregunta");
@@ -190,12 +229,19 @@
         aciertos = 0;
         puntaje.textContent = "Puntaje: 0";
         botonReiniciar.hidden = true;
-        mostrarPregunta();
+        iniciarTrivia();
       });
 
       async function iniciarTrivia() {
+        botonIniciar.disabled = true;
+        botonReiniciar.hidden = true;
+        progreso.textContent = "Cargando preguntas…";
+        resultado.textContent = "";
+        juego.hidden = false;
+
         try {
-          const respuesta = await fetch("/api/preguntas");
+          const cantidad = selectorCantidad.value;
+          const respuesta = await fetch(`/api/preguntas?cantidad=${cantidad}`);
           if (!respuesta.ok) {
             throw new Error("No se pudieron cargar las preguntas.");
           }
@@ -203,13 +249,22 @@
           if (preguntas.length === 0) {
             throw new Error("No hay preguntas disponibles.");
           }
+          indiceActual = 0;
+          aciertos = 0;
+          puntaje.textContent = "Puntaje: 0";
+          botonIniciar.hidden = true;
           mostrarPregunta();
         } catch (error) {
           progreso.textContent = error.message;
+          botonIniciar.hidden = false;
+          botonReiniciar.hidden = true;
+          juego.hidden = true;
+        } finally {
+          botonIniciar.disabled = false;
         }
       }
 
-      iniciarTrivia();
+      botonIniciar.addEventListener("click", iniciarTrivia);
     </script>
   </body>
 </html>
